@@ -39,4 +39,60 @@
 
 `openssl req -newkey rsa:4096 -nodes -sha256 -keyout harbor.key -out harbor.csr`
 
+* Generate certificate
 
+`openssl x509 -req -days 3650 -in harbor.csr -CA ca.crt -CAkey ca.key -CAcreateserial -extfile extfile.cnf -out harbor.crt`
+# Copy SSL file to /etc/ssl/certs
+`sudo cp *.crt *.key /etc/ssl/certs`
+
+### Install harbor 
+*  Download the Harbor installer
+
+`wget https://storage.googleapis.com/harbor-releases/harbor-online-installer-v1.5.2.tgz`
+* extract the installer
+
+`tar xvzf harbor-online-installer-v1.5.2.tgz`
+ * Harbor config file harbor.yml
+ 
+ `hostname: 172.31.18.209`
+ * Enable HTTPS 
+ 
+ `https:`  
+ 
+      `port: 443`
+       
+      `certificate: /etc/ssl/certs/harbor.crt
+       
+      private_key: /etc/ssl/certs/harbor..key`
+       
+       
+  *  Install Harbor
+  `./install.sh`
+  
+  * Confighure docker to access private repo 
+  
+ `vi /etc/default/docker`
+    ```DOCKER_OPTS="--insecure-registry 172.31.18.209"```
+    
+  Or 
+  
+`/etc/docker/daemon.json` 
+
+
+  `{
+    "insecure-registries" : [ "hostname:port" ]
+    }`
+    
+  Copy SSL to Docker client 
+  
+  `mkdir -p mkdir /etc/docker/certs.d/p-address/`
+  
+  `mv ca.crt /etc/docker/certs.d/p-address/`
+  
+  `systemctl restart docker`
+  
+  * Now login with private docker 
+  
+  ` docker login ip-address`
+  
+  `docker push ip-address/private/test:v1`
